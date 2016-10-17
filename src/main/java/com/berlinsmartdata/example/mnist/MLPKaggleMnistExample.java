@@ -1,10 +1,8 @@
 package com.berlinsmartdata.example.mnist;
 
 
-import org.apache.log4j.PropertyConfigurator;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
-import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -20,17 +18,13 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 
-import org.nd4j.linalg.dataset.SplitTestAndTrain;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
-public class MLPKaggleMnistExample {
+public class MLPKaggleMnistExample extends ModelUtils {
 
     private static Logger logger = LoggerFactory.getLogger(MLPKaggleMnistExample.class);
 
@@ -60,14 +54,9 @@ public class MLPKaggleMnistExample {
 
         RecordReader recordReader = new CSVRecordReader(numLinesToSkip, delimiter);
         recordReader.initialize(new FileSplit(new ClassPathResource("/kaggleMnist/train.csv").getFile()));
-
-        DataSetIterator iterator = new RecordReaderDataSetIterator(recordReader, fullDatasetNumRows, labelIndex, numClasses);
-        DataSet allData = iterator.next();
-        allData.shuffle();
-        SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.70);
-
-        DataSet trainingData = testAndTrain.getTrain();
-        DataSet testData = testAndTrain.getTest();
+        List<DataSet> dataSetList = getTrainTestDatasets(recordReader, fullDatasetNumRows, labelIndex, numClasses);
+        DataSet trainingData = dataSetList.get(0);
+        DataSet testData = dataSetList.get(1);
 
         logger.info("Starting to build model...");
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -112,12 +101,5 @@ public class MLPKaggleMnistExample {
         logger.info(eval.stats());
         logger.info("****************Example finished********************");
 
-    }
-
-    private static void trainModel(DataSet training, int batchSize, int numEpochs, MultiLayerNetwork model) {
-        for(Integer i=0; i < numEpochs; i++) {
-            DataSet trainData = training.sample(batchSize);
-            model.fit(trainData);
-        }
     }
 }
